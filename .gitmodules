@@ -1,0 +1,3 @@
+[submodule "CoCo"]
+	path = CoCo
+	url = https://github.com/RoMeLaUCLA/CoCo

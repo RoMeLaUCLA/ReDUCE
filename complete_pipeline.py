@@ -7,7 +7,7 @@ sys.path.append(dir_ReDUCE+"/unsupervised_learning")
 from fcn_clustered_solver_gurobi import solve_within_patch
 from bookshelf_generator import main as bin_generation_main
 from get_vertices import get_vertices, plot_rectangle
-import pickle
+import pickle, runpy
 import numpy as np
 import pdb
 
@@ -51,7 +51,7 @@ for iter_class in range(num_of_labels):
     all_classified_features.append(this_class_feature)
 
 # Generate more data, push through unsupervised classifier and load all clustered data
-new_data = bin_generation_main(20)
+new_data = bin_generation_main(10)
 
 # # Begin: for debug
 # with open('/home/romela/xuan/Learning_MIP/simulation2D/bin_problem_python/data/cluster4/dataset_unsupervised_learning_part4.p', 'rb') as f:
@@ -134,6 +134,8 @@ for iter_data in range(int((len(new_data)-1)/2)):
 #     item_height_in_hand = this_feature[15]
 #     # End: for debug
 
+    # TODO: There are 3 places that use the same box->feature function: here, bookshelf_generator and scene_dataset_generation.
+    #  To fix this, just let the bookshelf generator give "shelf" object
     print("############################################################## Data number {} ##############################################################".format(iter_data))
     iter_1 = 2 * iter_data
     iter_2 = 2 * iter_data + 1
@@ -173,10 +175,12 @@ for iter_data in range(int((len(new_data)-1)/2)):
         item_height_stored.append(new_data[iter_2]['boxes'][iter_box][3][1])
         vv = get_vertices(center_pt, R_bw_pt, size)
         vertices.append(vv)
+        # TODO: The above center/angle/width/height/vertices can be gathered in a single object named "item"
 
         this_feature.extend([center_pt[0], center_pt[1], ang_pt, size[0], size[1]])
 
     this_feature.extend([item_height_in_hand, item_width_in_hand])
+    # TODO: put all information about items and in-hand-items into an object named "scene"
 
     assert len(this_feature) == 17, "Inconsistent feature length !!"
 
@@ -203,7 +207,8 @@ for iter_data in range(int((len(new_data)-1)/2)):
                       bin_width, bin_height, bin_left, bin_right, bin_ground, bin_up, v_bin,
                       num_of_item, np.array(item_width_stored), np.array(item_height_stored),
                       np.array(item_center_stored), np.array(item_angle_stored),
-                      item_width_in_hand, item_height_in_hand, all_classified_solutions[ret_class], iter_data, iter_data)
+                      item_width_in_hand, item_height_in_hand,  # TODO: all the input above can be a single object named "scene"
+                      all_classified_solutions[ret_class], iter_data, iter_data)
 
         if (not data_out_range) and prob_success:
             feat_item_width_stored = np.array([this_feature[5*iter_item+4] for iter_item in range(num_of_item)])
@@ -237,10 +242,13 @@ for iter_class in range(num_of_classes):
              "Solve_time": solve_times_all_classes[iter_class], "Cost": costs_all_classes[iter_class],
              "num_of_int": num_of_int_all_classes[iter_class]}
 
-    folder_path = "for_clustered_data_generate_dataset/" + "dataset_class_" + str(iter_class)
+    folder_path = "clustered_dataset/" + "dataset_class_" + str(iter_class)
     if not os.path.exists(folder_path):
         os.makedirs(folder_path)
 
     save_path = folder_path + "/" + prefix + "_dataset_class_" + str(iter_class) + "_y_guess.pkl"
     with open(save_path, "wb") as f:
         pickle.dump(saves, f)
+
+# Separate dataset into training and testing sets
+runpy.run_module('clustered_data_separate_train_test_data')

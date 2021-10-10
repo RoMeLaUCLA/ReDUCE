@@ -16,6 +16,7 @@ from add_McCormick_envelope_constraint import add_vertex_polytope_constraint_gur
 from add_piecewise_linear_constraint import add_piecewise_linear_constraint
 from reassign_int_var import reassign_int_var
 from generate_int_list import generate_int_list
+from utils.get_pair_number import get_pair_number
 import math, time, copy, runpy
 import pickle
 import pdb
@@ -25,20 +26,6 @@ import pdb
 
 # Since we assume easy order of items inside the bin, the input items should always be counting from left to
 # right 0, 1, 2, 3, 4, 5, etc
-
-
-def get_pair_number(list_pairs, item_left, item_right):
-    # Retrieve pair number
-    found = False
-    ct_pair = 0
-    iter_pair = 0
-    while not found:
-        if list_pairs[iter_pair, 0] == item_left and list_pairs[iter_pair, 1] == item_right:
-            ct_pair = iter_pair
-            found = True
-        else:
-            iter_pair += 1
-    return ct_pair
 
 
 def solve_within_patch(bin_width, bin_height, bin_left, bin_right, bin_ground, bin_up, v_bin, num_of_item, item_width_stored,

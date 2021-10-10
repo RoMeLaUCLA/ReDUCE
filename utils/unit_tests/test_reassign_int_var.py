@@ -1,3 +1,6 @@
+import os, sys
+dir_utils = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+sys.path.append(dir_utils)
 from reassign_int_var import reassign_int_var
 
 list_sect = [[1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 8], [8, 9]]

@@ -1,3 +1,6 @@
+import os, sys
+dir_utils = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+sys.path.append(dir_utils)
 import gurobipy as go
 import numpy as np
 from add_McCormick_envelope_constraint import add_bilinear_constraint_gurobi, limit2vertex

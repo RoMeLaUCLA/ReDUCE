@@ -1,8 +1,10 @@
+import os, sys
+dir_utils = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+sys.path.append(dir_utils)
 from add_piecewise_linear_constraint import add_piecewise_linear_constraint
 import gurobipy as go
 import matplotlib.pyplot as plt
 import numpy as np
-
 
 x_lim = [[-1.0, -0.5],
          [-0.5,  0.0],

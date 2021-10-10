@@ -1,3 +1,6 @@
+import os, sys
+dir_utils = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+sys.path.append(dir_utils)
 from generate_int_list import generate_int_list
 import gurobipy as go
 

@@ -11,6 +11,9 @@ import pickle, runpy
 import numpy as np
 import pdb
 
+list_features = ['item_center_x_stored', 'item_center_y_stored', 'item_angle_stored',
+                 'item_width_stored', 'item_height_stored', 'item_width_in_hand', 'item_height_in_hand']
+
 model_name = 'models_100_classes'
 
 prefix = '99'
@@ -94,15 +97,7 @@ num_of_classes = 100
 
 train_params = {'bin_width': bin_width, 'bin_height': bin_height, 'num_of_item': num_of_item}
 
-print(bin_width)
-print(bin_height)
-print(bin_left)
-print(bin_right)
-print(bin_ground)
-print(bin_up)
-print(v_bin)
-
-feature_all_classes = [[] for ii in range(num_of_classes)]
+feature_all_classes = [{iter_feature: [] for iter_feature in list_features} for ii in range(num_of_classes)]
 int_all_classes = [[] for ii in range(num_of_classes)]
 X_all_classes = [[] for ii in range(num_of_classes)]
 solve_times_all_classes = [[] for ii in range(num_of_classes)]
@@ -219,15 +214,13 @@ for iter_data in range(int((len(new_data)-1)/2)):
             feat_item_height_in_hand = this_feature[15]
             feat_item_width_in_hand = this_feature[16]
 
-            feature_dict = {'item_center_x_stored': feat_item_center_x_stored,
-                            'item_center_y_stored': feat_item_center_y_stored,
-                            'item_angle_stored': feat_item_angle_stored,
-                            'item_width_stored': feat_item_width_stored,
-                            'item_height_stored': feat_item_height_stored,
-                            'item_width_in_hand': feat_item_width_in_hand,
-                            'item_height_in_hand': feat_item_height_in_hand}
-
-            feature_all_classes[ret_class].append(feature_dict)
+            feature_all_classes[ret_class]['item_center_x_stored'].append(feat_item_center_x_stored)
+            feature_all_classes[ret_class]['item_center_y_stored'].append(feat_item_center_y_stored)
+            feature_all_classes[ret_class]['item_angle_stored'].append(feat_item_angle_stored)
+            feature_all_classes[ret_class]['item_width_stored'].append(feat_item_width_stored)
+            feature_all_classes[ret_class]['item_height_stored'].append(feat_item_height_stored)
+            feature_all_classes[ret_class]['item_width_in_hand'].append(feat_item_width_in_hand)
+            feature_all_classes[ret_class]['item_height_in_hand'].append(feat_item_height_in_hand)
             int_all_classes[ret_class].append(Y_ret)
             X_all_classes[ret_class].append(X_ret)
             solve_times_all_classes[ret_class].append(time_ret)

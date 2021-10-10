@@ -10,6 +10,8 @@ from sklearn import preprocessing
 from datetime import datetime
 from PIL import Image as im
 import time
+import os
+dir_curr_path = os.path.dirname(os.path.realpath(__file__))
 
 # TODO: documentation: pipeline: automatic_data_classification (this file) -> dataset_generation ->
 #  solve_mode_0 -> separate_train_test_data
@@ -296,7 +298,7 @@ def main(num_data=50):
     if save_data:
         # print(saves)
         ext = datetime.now().strftime("%H%M%S")
-        with open(f"bookshelf_scene_data/zero_remove_angle_auto_generated_boxes_data_ba_{ext}.pkl", "wb") as f:
+        with open(dir_curr_path + "/bookshelf_scene_data/zero_remove_angle_auto_generated_boxes_data_ba_{ext}.pkl", "wb") as f:
             pickle.dump(saves, f)
 
     return saves

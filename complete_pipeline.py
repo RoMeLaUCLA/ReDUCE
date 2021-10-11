@@ -56,46 +56,15 @@ for iter_class in range(num_of_labels):
 # Generate more data, push through unsupervised classifier and load all clustered data
 new_data = bin_generation_main(10)
 
-# # Begin: for debug
-# with open('/home/romela/xuan/Learning_MIP/simulation2D/bin_problem_python/data/cluster4/dataset_unsupervised_learning_part4.p', 'rb') as f:
-#     new_data = pickle.load(f)
-#
-# all_feature_for_debug = new_data['feature']
-#
-# bin_width = 176
-# bin_height = 110
-#
-# bin_left = -88.0
-# bin_right = 88.0
-# bin_ground = 0.0
-# bin_up = 110
-#
-# v_bin = np.array([[88., 110.],
-#                   [88., 0.],
-#                   [-88., 0.],
-#                   [-88., 110.]])
-#
-# num_of_item = 3
-# # End: for debug
+inst_shelf_geometry = new_data[0]["after"]["shelf"].shelf_geometry
 
-bin_width = new_data[-1][0]
-bin_height = new_data[-1][1]
-
-bin_left = -bin_width / 2.0
-bin_right = bin_width / 2.0
-bin_ground = 0.0
-bin_up = bin_height
-
-v_bin = np.array([[bin_right, bin_up],
-                  [bin_right, bin_ground],
-                  [bin_left, bin_ground],
-                  [bin_left, bin_up]])
-
-num_of_item = 3
+bin_width = inst_shelf_geometry.shelf_width
+bin_height = inst_shelf_geometry.shelf_height
+num_of_item_stored = new_data[0]["after"]["shelf"].num_of_item
 
 num_of_classes = 100
 
-train_params = {'bin_width': bin_width, 'bin_height': bin_height, 'num_of_item': num_of_item}
+train_params = {'bin_width': bin_width, 'bin_height': bin_height, 'num_of_item': num_of_item_stored}
 
 feature_all_classes = [{iter_feature: [] for iter_feature in list_features} for ii in range(num_of_classes)]
 int_all_classes = [[] for ii in range(num_of_classes)]
@@ -104,79 +73,11 @@ solve_times_all_classes = [[] for ii in range(num_of_classes)]
 costs_all_classes = [[] for ii in range(num_of_classes)]
 num_of_int_all_classes = [[] for ii in range(num_of_classes)]
 
-# TODO: also make the following function an utility function
-for iter_data in range(int((len(new_data)-1)/2)):
+for iter_data in range(len(new_data)):
 
-# # Begin: for debug
-# for iter_data in range(len(all_feature_for_debug)):
-#
-#     this_feature = all_feature_for_debug[iter_data]
-#
-#     print("------------------------------------------------------------")
-#     print("feature 0")
-#     print(all_feature[iter_data])
-#     print("feature 1")
-#     print(this_feature)
-#     assert all_feature[iter_data] == this_feature, "Wrong feature data !!"
-#
-#     item_width_stored = [this_feature[5 * 0 + 4], this_feature[5 * 1 + 4], this_feature[5 * 2 + 4]]
-#     item_height_stored = [this_feature[5 * 0 + 3], this_feature[5 * 1 + 3], this_feature[5 * 2 + 3]]
-#     item_center_stored = np.array([[this_feature[5 * 0 + 0], this_feature[5 * 0 + 1]],
-#                                    [this_feature[5 * 1 + 0], this_feature[5 * 1 + 1]],
-#                                    [this_feature[5 * 2 + 0], this_feature[5 * 2 + 1]]])
-#     item_angle_stored = [this_feature[5 * 0 + 2], this_feature[5 * 1 + 2], this_feature[5 * 2 + 2]]
-#     item_width_in_hand = this_feature[16]
-#     item_height_in_hand = this_feature[15]
-#     # End: for debug
-
-    # TODO: There are 3 places that use the same box->feature function: here, bookshelf_generator and scene_dataset_generation.
-    #  To fix this, just let the bookshelf generator give "shelf" object
     print("############################################################## Data number {} ##############################################################".format(iter_data))
-    iter_1 = 2 * iter_data
-    iter_2 = 2 * iter_data + 1
-
-    mask_o = new_data[iter_2]['image']
-    mask = np.zeros(np.shape(mask_o))
-    for iter_row in range(np.shape(mask_o)[0]):
-        for iter_column in range(np.shape(mask_o)[1]):
-            mask[iter_row, iter_column] = mask_o[iter_row, iter_column]
-
-    item_center_stored = []
-    item_angle_stored = []
-    item_width_stored = []
-    item_height_stored = []
-    vertices = []
-    width_in_hand = 0.0; height_in_hand = 0.0
-    this_feature = []
-
-    remove = new_data[iter_2]['remove']
-    item_width_in_hand = new_data[iter_1]['boxes'][remove][3][0]
-    item_height_in_hand = new_data[iter_1]['boxes'][remove][3][1]
-
-    for iter_box in range(len(new_data[iter_2]['boxes'])):  # iterr == iter_2, does not include item-in-hand
-
-        # Note horizontally flipped
-        center_pt = [0-(bin_width/2.0-new_data[iter_2]['boxes'][iter_box][0]), bin_height-new_data[iter_2]['boxes'][iter_box][1]-7]
-        ang_pt = -new_data[iter_2]['boxes'][iter_box][2]
-        R_bw_pt = np.array([[np.cos(ang_pt), -np.sin(ang_pt)],
-                            [np.sin(ang_pt),  np.cos(ang_pt)]])
-
-        size = np.array([new_data[iter_2]['boxes'][iter_box][3][1], new_data[iter_2]['boxes'][iter_box][3][0]])
-        # First height (size[0] = [3][1]), then width (size[1] = [3][0])
-
-        item_center_stored.append(center_pt)
-        item_angle_stored.append(ang_pt)
-        item_width_stored.append(new_data[iter_2]['boxes'][iter_box][3][0])
-        item_height_stored.append(new_data[iter_2]['boxes'][iter_box][3][1])
-        vv = get_vertices(center_pt, R_bw_pt, size)
-        vertices.append(vv)
-        # TODO: The above center/angle/width/height/vertices can be gathered in a single object named "item"
-
-        this_feature.extend([center_pt[0], center_pt[1], ang_pt, size[0], size[1]])
-
-    this_feature.extend([item_height_in_hand, item_width_in_hand])
-    # TODO: put all information about items and in-hand-items into an object named "scene"
-
+    this_shelf = new_data[iter_data]["after"]["shelf"]
+    this_feature = this_shelf.return_flat_feature()
     assert len(this_feature) == 17, "Inconsistent feature length !!"
 
     this_feature_scaled = feature_scaler.transform(np.array([this_feature]))
@@ -199,28 +100,16 @@ for iter_data in range(int((len(new_data)-1)/2)):
     # Pick out data that has label of class 0, push features of data through to get integers
     if ret_class == 68:
         prob_success, X_ret, X_dict, Y_ret, cost_ret, time_ret, actual_num_of_int_var, data_out_range = solve_within_patch(
-                      bin_width, bin_height, bin_left, bin_right, bin_ground, bin_up, v_bin,
-                      num_of_item, np.array(item_width_stored), np.array(item_height_stored),
-                      np.array(item_center_stored), np.array(item_angle_stored),
-                      item_width_in_hand, item_height_in_hand,  # TODO: all the input above can be a single object named "scene"
-                      all_classified_solutions[ret_class], iter_data, iter_data)
+                      this_shelf, all_classified_solutions[ret_class], iter_data, iter_data)
 
         if (not data_out_range) and prob_success:
-            feat_item_width_stored = np.array([this_feature[5*iter_item+4] for iter_item in range(num_of_item)])
-            feat_item_height_stored = np.array([this_feature[5*iter_item+3] for iter_item in range(num_of_item)])
-            feat_item_center_x_stored = np.array([this_feature[5*iter_item+0] for iter_item in range(num_of_item)])
-            feat_item_center_y_stored = np.array([this_feature[5*iter_item+1] for iter_item in range(num_of_item)])
-            feat_item_angle_stored = np.array([this_feature[5*iter_item+2] for iter_item in range(num_of_item)])
-            feat_item_height_in_hand = this_feature[15]
-            feat_item_width_in_hand = this_feature[16]
-
-            feature_all_classes[ret_class]['item_center_x_stored'].append(feat_item_center_x_stored)
-            feature_all_classes[ret_class]['item_center_y_stored'].append(feat_item_center_y_stored)
-            feature_all_classes[ret_class]['item_angle_stored'].append(feat_item_angle_stored)
-            feature_all_classes[ret_class]['item_width_stored'].append(feat_item_width_stored)
-            feature_all_classes[ret_class]['item_height_stored'].append(feat_item_height_stored)
-            feature_all_classes[ret_class]['item_width_in_hand'].append(feat_item_width_in_hand)
-            feature_all_classes[ret_class]['item_height_in_hand'].append(feat_item_height_in_hand)
+            feature_all_classes[ret_class]['item_center_x_stored'].append(this_shelf.return_stored_item_center_x())
+            feature_all_classes[ret_class]['item_center_y_stored'].append(this_shelf.return_stored_item_center_y())
+            feature_all_classes[ret_class]['item_angle_stored'].append(this_shelf.return_stored_item_angles())
+            feature_all_classes[ret_class]['item_width_stored'].append(this_shelf.return_stored_item_widths())
+            feature_all_classes[ret_class]['item_height_stored'].append(this_shelf.return_stored_item_heights())
+            feature_all_classes[ret_class]['item_width_in_hand'].append(this_shelf.item_width_in_hand)
+            feature_all_classes[ret_class]['item_height_in_hand'].append(this_shelf.item_height_in_hand)
             int_all_classes[ret_class].append(Y_ret)
             X_all_classes[ret_class].append(X_ret)
             solve_times_all_classes[ret_class].append(time_ret)

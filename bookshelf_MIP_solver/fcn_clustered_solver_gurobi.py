@@ -28,9 +28,22 @@ import pdb
 # right 0, 1, 2, 3, 4, 5, etc
 
 
-def solve_within_patch(bin_width, bin_height, bin_left, bin_right, bin_ground, bin_up, v_bin, num_of_item, item_width_stored,
-              item_height_stored, item_center_stored, item_angle_stored, item_width_in_hand, item_height_in_hand,
-              data_patch_indicator, count, iter_data):
+def solve_within_patch(shelf_data, data_patch_indicator, count, iter_data):
+
+    bin_width = shelf_data.shelf_geometry.shelf_width
+    bin_height = shelf_data.shelf_geometry.shelf_height
+    bin_left = shelf_data.shelf_geometry.shelf_left
+    bin_right = shelf_data.shelf_geometry.shelf_right
+    bin_ground = shelf_data.shelf_geometry.shelf_ground
+    bin_up = shelf_data.shelf_geometry.shelf_up
+    v_bin = shelf_data.shelf_geometry.v_bin
+    num_of_item = shelf_data.num_of_item
+    item_width_stored = shelf_data.return_stored_item_widths()
+    item_height_stored = shelf_data.return_stored_item_heights()
+    item_center_stored = shelf_data.return_stored_item_centers()
+    item_angle_stored = shelf_data.return_stored_item_angles()
+    item_width_in_hand = shelf_data.item_width_in_hand
+    item_height_in_hand = shelf_data.item_height_in_hand
 
     init_globals = {'num_of_item': num_of_item, 'bin_width': bin_width, 'bin_height': bin_height, 'item_width_stored': item_width_stored}
     ret_dict = runpy.run_module('setup_variable_range', init_globals=init_globals)

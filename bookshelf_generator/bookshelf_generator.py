@@ -10,8 +10,11 @@ from sklearn import preprocessing
 from datetime import datetime
 from PIL import Image as im
 import time
-import os
+import os, sys
 dir_curr_path = os.path.dirname(os.path.realpath(__file__))
+dir_ReDUCE = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+sys.path.append(dir_ReDUCE+"/utils")
+from book_problem_classes import Item, ShelfGeometry, Shelf
 
 # TODO: documentation: pipeline: automatic_data_classification (this file) -> dataset_generation ->
 #  solve_mode_0 -> separate_train_test_data
@@ -136,12 +139,10 @@ def main(num_data=50):
     # Saves order: (x_pos, y_pos, angle, (bin_width, bin_height)), image
     #              at the very end the shelf dimensions are saved
 
-    # Times 2 because before and after
-    num_data *= 2
-
     # Shelf/Screen size: function of above parameters
     bin_width, bin_height = (box_w[1] + 4) * num_boxes, box_h[1] + 20
-    
+    inst_shelf_geometry = ShelfGeometry(shelf_width=bin_width, shelf_height=bin_height)
+
     # Range for random spacing between position
     x_pos = (5, bin_width / num_boxes - 1.5 * num_boxes)
 
@@ -190,11 +191,16 @@ def main(num_data=50):
             # Save the before data
             before["boxes"] = []
             for b in boxes:
-                before["boxes"].append((b.body.position[0], b.body.position[1], b.body.angle, b.wh))
+                # before["boxes"].append((b.body.position[0], b.body.position[1], b.body.angle, b.wh))
                 # Note: that pos y-axis goes from top to bottom and difference of 7 because
                 #       boundary of shelf (5) + box (2) = 7
+                before["boxes"].append(Item(center_x=b.body.position[0] - bin_width / 2.0,
+                                            center_y=bin_height - b.body.position[1] - 7,
+                                               angle=-b.body.angle, height=b.wh[1], width=b.wh[0]))
             pix = img_to_pix(surf.copy())
             before["image"] = pix
+            before["shelf"] = Shelf(before["boxes"], num_of_stored_item=num_boxes, shelf_geometry=inst_shelf_geometry,
+                                    item_width_in_hand=-1, item_height_in_hand=-1)
 
             # Remove box and reset time
             t = 0
@@ -233,33 +239,28 @@ def main(num_data=50):
             print(f"Sample: {int((len(saves)+1)/2)}") 
             after["boxes"] = []
             for b in boxes:
-                after["boxes"].append((b.body.position[0], b.body.position[1], b.body.angle, b.wh))
+                after["boxes"].append(Item(center_x=b.body.position[0] - bin_width / 2.0,
+                                           center_y=bin_height - b.body.position[1] - 7,
+                                              angle=-b.body.angle, height=b.wh[1], width=b.wh[0]))
+
             pix = img_to_pix(surf.copy())
             after["image"] = pix
-            
+            after["shelf"] = Shelf(after["boxes"], num_of_stored_item=num_boxes-1, shelf_geometry=inst_shelf_geometry,
+                                    item_width_in_hand=width_removed, item_height_in_hand=height_removed)
+
             # Automatic mode selection
             num_boxes_stored = len(after['boxes'])
             center_list = []
             angle_list = []
             width_list = []
             height_list = []
-            width_in_hand = width_removed
-            height_in_hand = height_removed
 
             for iter_stored in range(num_boxes_stored):
                 # Translate center and angle, directly from dataset_generation.py
-                # center_pt = [0 - (bin_width / 2.0 - data[iterr]['boxes'][iter_box][0]),
-                #              bin_height - data[iterr]['boxes'][iter_box][1] - 7]
-                # ang_pt = -data[iterr]['boxes'][iter_box][2]
-                # center_list.append([data["boxes"][iter_stored][0], data["boxes"][iter_stored][1]])
-                bin_width = 176  # Directly from dataset_generation.py
-                bin_height = 110
-                center_list.append([0 - (bin_width / 2.0 - after["boxes"][iter_stored][0]),
-                                    bin_height - after["boxes"][iter_stored][1] - 7])
-                # angle_list.append(after["boxes"][iter_stored][2])
-                angle_list.append(-after["boxes"][iter_stored][2])
-                width_list.append(after["boxes"][iter_stored][3][0])
-                height_list.append(after["boxes"][iter_stored][3][1])
+                center_list.append([b.body.position[0] - bin_width / 2.0, bin_height - b.body.position[1] - 7])
+                angle_list.append(-b.body.angle)
+                width_list.append(b.wh[0])
+                height_list.append(b.wh[1])
 
             # data_raw = {'center': center_list, 'angle': angle_list, 'width': width_list, 'height': height_list,
             #             'mode': 0, 'width_in_hand': width_in_hand, 'height_in_hand': height_in_hand}
@@ -279,10 +280,13 @@ def main(num_data=50):
             # mode = 0 if prediction[0][0] == 1 else 1
 
             after["remove"] = remove_input
-            #after["mode"] = mode
+            assert (before["boxes"][remove_input].height == after["shelf"].item_height_in_hand) \
+                   and (before["boxes"][remove_input].width == after["shelf"].item_width_in_hand), \
+                   "From bookshelf generator: Inconsistent removed item width or height !!"
+
             print("------------------------SUCCESS------------------------------")
-            saves.append(before)
-            saves.append(after)
+
+            saves.append({"before": before, "after": after})
 
         # Reset environment          
         t = 0
@@ -293,7 +297,6 @@ def main(num_data=50):
             if isinstance(s, pymunk.shapes.Poly):
                 boxes.append(s)
 
-    saves.append((bin_width, bin_height))
     # Save shelf dimension
     if save_data:
         # print(saves)

@@ -5,20 +5,17 @@ from sklearn.model_selection import train_test_split
 
 # TODO: Begin: Remember to make changes to the following parameters !!
 dir_path = dir_ReDUCE + "/clustered_dataset"
-# sss = "AllClusters"
-sss = "cluster68_3000data"
+sss = "AllClusters"
+# sss = "cluster68_3000data"
 
 train_fn = dir_path + '/train_separated_' + sss + '.p'
 test_fn = dir_path + '/test_separated_' + sss + '.p'
 
-list_features = ['item_center_x_stored', 'item_center_y_stored', 'item_angle_stored',
-                 'item_width_stored', 'item_height_stored', 'item_width_in_hand', 'item_height_in_hand']
-
-#class_label_all = list(range(100))
-class_label_all = [68]
+class_label_all = list(range(100))
+# class_label_all = [68]
 len_class_label = len(class_label_all)
 
-list_dataset = [[99] for iterr in range(len_class_label)]
+list_dataset = [[0] for iterr in range(len_class_label)]
 # TODO: End: Remember to make changes to the following parameters !!
 
 list_train_file = []
@@ -53,17 +50,6 @@ for iter_dataset in range(num_dataset - 1):
 print("Number of integers for each cluster is")
 print(num_of_int_each_cluster)
 
-# [ 77 0  0  0 46  0 43  0  0 40
-#   41 0  0  0 50  0  0 47  0  0
-#   0 47  0  0 47  0  0 49  0  0
-#   0  0  0  0  0 66  0  0  0  0
-#   0  0 52  0  0  0  0 50  0 47
-#   46 0  0  0  0 68  0  0  0  0
-#   0  0 52  0 45 42  0 41 68 77
-#   0  0  0  0  0  0  0  0  0  0
-#   54 0  0  0 50  0  0 49  0 50
-#   0  0  0  0  0 48  0  0  0  0]
-
 print("===============================================================================================================")
 print("Separating data into training and testing dataset ...")
 print("Using datasets: ")
@@ -95,8 +81,7 @@ for ct_dataset in range(num_dataset):
     costs_all.append(list_train_data[ct_dataset]["Cost"])
 
     assert np.shape(X_all[ct_dataset])[0] == np.shape(Y_all[ct_dataset])[0], "Inconsistent data length !!"
-    for iter_feature in list_features:
-        assert np.shape(X_all[ct_dataset])[0] == np.shape(features_all[ct_dataset][iter_feature])[0], "Inconsistent data length !!"
+    assert np.shape(X_all[ct_dataset])[0] == np.shape(features_all[ct_dataset])[0], "Inconsistent data length !!"
     assert np.shape(X_all[ct_dataset])[0] == np.shape(solve_times_all[ct_dataset])[0], "Inconsistent data length !!"
     assert np.shape(X_all[ct_dataset])[0] == np.shape(costs_all[ct_dataset])[0], "Inconsistent data length !!"
 
@@ -109,18 +94,13 @@ print("Class labels are {}".format(class_label_all))
 
 num_train_data = int(input("Please specify the size of training dataset:"))
 
-feature = {iter_feature: [] for iter_feature in list_features}
+feature = []
 
 # Features
 for ct in range(num_dataset):
     if not ct in empty_dataset:
-        len_this_dataset = len(features_all[ct][list_features[0]])
-        assert len_this_dataset > 0, "Length of dataset should be larger than 0!"
-        for iter_feature in list_features:
-            feature[iter_feature] += features_all[ct][iter_feature]
-
-for iter_feature in list_features:
-    feature[iter_feature] = np.array(feature[iter_feature])
+        assert len(features_all[ct]) > 0, "Length of dataset should be larger than 0!"
+        feature += features_all[ct]
 
 # Solved states
 X = np.vstack([X_all[ct] for ct in range(num_dataset) if not ct in empty_dataset])
@@ -147,13 +127,14 @@ XX, yy, indices = range(len_tot), range(len_tot), range(len_tot)
 XX_train, XX_test, yy_train, yy_test, indices_train, indices_test = train_test_split(XX, yy, indices, test_size=1.0 - (
         1.0 * num_train_data / len_tot), random_state=33)
 
+# TODO: Maybe change this to dictionary (different from the original CoCo format)
 train_data = [train_params]
-train_data += [{iter_feature: feature[iter_feature][indices_train] for iter_feature in list_features}]
+train_data += [[feature[ii] for ii in indices_train]]
 train_data += [np.array(X[indices_train]), np.array(Y[indices_train])]
 train_data += [np.array(costs[indices_train]), np.array(solve_times[indices_train])]
 
 test_data = [train_params]
-test_data += [{iter_feature: feature[iter_feature][indices_test] for iter_feature in list_features}]
+test_data += [[feature[ii] for ii in indices_test]]
 test_data += [np.array(X[indices_test]), np.array(Y[indices_test])]
 test_data += [np.array(costs[indices_test]), np.array(solve_times[indices_test])]
 

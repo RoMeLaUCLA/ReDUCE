@@ -236,7 +236,7 @@ def main(num_data=50):
         # Save if after remove book it's stable
         if not reset:
             print("------------------")
-            print(f"Sample: {int((len(saves)+1)/2)}") 
+            print(f"Sample: {len(saves)}")
             after["boxes"] = []
             for b in boxes:
                 after["boxes"].append(Item(center_x=b.body.position[0] - bin_width / 2.0,

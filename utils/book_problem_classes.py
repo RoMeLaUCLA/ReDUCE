@@ -6,6 +6,38 @@ from get_vertices import get_vertices
 offset = 3  # To account for numerical issue
 
 
+class BookProblemFeature:
+    list_features = ['item_center_x_stored', 'item_center_y_stored', 'item_angle_stored',
+                     'item_width_stored', 'item_height_stored', 'item_width_in_hand', 'item_height_in_hand']
+    len_bookshelf_feature = 17
+    num_of_stored_item = 3
+
+    def __init__(self, list_bookshelf):
+        """
+        Input is a feature vector composed of [feature_item0, feature_item1, feature_item2, item_height_in_hand, item_width_in_hand]
+        """
+        assert len(list_bookshelf) == BookProblemFeature.len_bookshelf_feature, "Inconsistent feature length !!"
+        self.feature = list_bookshelf
+
+    def flatten(self):
+        return self.feature
+
+    def flatten_to_dictionary(self):
+        """
+        Flatten the feature vector according to the order of list_features, meaning the vector is composed of
+        {'item_center_x_stored': item_center_x_stored for all items,
+         'item_center_y_stored': item_center_y_stored for all items, and so on}
+        """
+        num = BookProblemFeature.num_of_stored_item
+        return {'item_center_x_stored': np.array([self.feature[5*iter_item+0] for iter_item in range(num)]),
+                'item_center_y_stored': np.array([self.feature[5*iter_item+1] for iter_item in range(num)]),
+                'item_angle_stored': np.array([self.feature[5*iter_item+2] for iter_item in range(num)]),
+                'item_width_stored': np.array([self.feature[5*iter_item+4] for iter_item in range(num)]),
+                'item_height_stored': np.array([self.feature[5*iter_item+3] for iter_item in range(num)]),
+                'item_width_in_hand': self.feature[16],
+                'item_height_in_hand': self.feature[15]}
+
+
 class Item:
     def __init__(self, center_x, center_y, angle, height, width):
         self.center_x = center_x
@@ -76,7 +108,7 @@ class Shelf:
         else:
             self.contain_in_hand_item = False
 
-    def return_flat_feature(self):
+    def return_feature(self):
         ret = []
 
         for iter_item in range(self.num_of_item):
@@ -85,7 +117,7 @@ class Shelf:
         if self.contain_in_hand_item:
             ret += [self.item_height_in_hand, self.item_width_in_hand]
 
-        return np.array(ret)
+        return BookProblemFeature(ret)
 
     def return_stored_item_widths(self):
         ret = []

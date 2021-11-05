@@ -60,6 +60,20 @@ print(shelf.return_feature().flatten())
 assert np.all(shelf.return_feature().flatten() == [1, 54, -1, 10, 5, 2, 55, -2, 20, 10, 3, 56, -3, 30, 15,
                                                    height_in_hand, width_in_hand])
 
+# Create shelf from flatten feature
+rr = shelf.flat_feature_to_init_list(shelf.return_feature().flatten(), geom)
+shelf_from_flat_feature = Shelf(rr[0], rr[1], rr[2], rr[3], rr[4])
+
+for iter_item in range(num_of_item):
+    assert shelf_from_flat_feature.item_list[iter_item].center_x == shelf.item_list[iter_item].center_x, "Error in recreated shelf from flat feature!"
+    assert shelf_from_flat_feature.item_list[iter_item].center_y == shelf.item_list[iter_item].center_y, "Error in recreated shelf from flat feature!"
+    assert shelf_from_flat_feature.item_list[iter_item].angle == shelf.item_list[iter_item].angle, "Error in recreated shelf from flat feature!"
+    assert shelf_from_flat_feature.item_list[iter_item].height == shelf.item_list[iter_item].height, "Error in recreated shelf from flat feature!"
+    assert shelf_from_flat_feature.item_list[iter_item].width == shelf.item_list[iter_item].width, "Error in recreated shelf from flat feature!"
+
+assert shelf_from_flat_feature.num_of_item == shelf.num_of_item, "Error in recreated shelf from flat feature!"
+assert shelf_from_flat_feature.shelf_geometry == shelf.shelf_geometry, "Error in recreated shelf from flat feature!"
+
 print("Shelf feature dictionary ===========================================================")
 dd = shelf.return_feature().flatten_to_dictionary()
 print(dd)

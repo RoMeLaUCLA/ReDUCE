@@ -13,8 +13,8 @@ def reassign_int_var(list_sect, list_int, list_infeasible):
     :param list_infeasible: A list of numbers indicating sections that needed to be ruled out.
     :return:
     num_of_int_reassigned: The number of integer variables that is needed for the remaining sections.
-    list_sect_reassigned: A list of sections that are re-assigned the integer variables.
-    list_sect_label_reassigned_with_repeat: A list of lables of the reassigned sections corresponding to the list above.
+    list_sect_reassigned: A list of sections that are re-assigned the integer variables (possibly repeated at the end).
+    list_sect_label_reassigned_with_repeat: A list of labels of the reassigned sections corresponding to the list above.
     reassign_map: A dictionary that, given the re-assigned integer variables as keys, will output the original integer
                   variables.
     """

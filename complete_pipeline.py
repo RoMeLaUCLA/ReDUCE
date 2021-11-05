@@ -6,14 +6,21 @@ sys.path.append(dir_ReDUCE+"/bookshelf_MIP_solver")
 sys.path.append(dir_ReDUCE+"/unsupervised_learning")
 from fcn_clustered_solver_gurobi import solve_within_patch
 from bookshelf_generator import main as bin_generation_main
-from get_vertices import get_vertices, plot_rectangle
 import pickle, runpy
 import numpy as np
 import pdb
 
-model_name = 'models_100_classes'
+model_name = '1000_data/26_classes'
+prefix = '9'
+list_clusters = list(range(26))
+num_of_classes = 26
 
-prefix = '2'
+# model_name = '4000_data/models_100_classes'
+# prefix = '2'
+# list_clusters = list(range(100))
+# num_of_classes = 100
+
+use_warm_start = False
 
 # Load trained unsupervised classifier
 with open(dir_ReDUCE + '/unsupervised_learning/models/' + model_name + '/xg_model.pkl', 'rb') as f:
@@ -50,15 +57,13 @@ for iter_class in range(num_of_labels):
     all_classified_features.append(this_class_feature)
 
 # Generate more data, push through unsupervised classifier and load all clustered data
-new_data = bin_generation_main(4000)
+new_data = bin_generation_main(3500)
 
 inst_shelf_geometry = new_data[0]["after"]["shelf"].shelf_geometry
 
 bin_width = inst_shelf_geometry.shelf_width
 bin_height = inst_shelf_geometry.shelf_height
 num_of_item_stored = new_data[0]["after"]["shelf"].num_of_item
-
-num_of_classes = 100
 
 train_params = {'bin_width': bin_width, 'bin_height': bin_height, 'num_of_item': num_of_item_stored}
 
@@ -94,33 +99,35 @@ for iter_data in range(len(new_data)):
 
     # Pick out data that has label of class 0, push features of data through to get integers
     if ret_class != -1:
-    # if ret_class == 68:
-        prob_success, X_ret, X_dict, Y_ret, cost_ret, time_ret, actual_num_of_int_var, data_out_range = solve_within_patch(
-                      this_shelf, all_classified_solutions[ret_class], iter_data, iter_data)
+        if ret_class in list_clusters:
 
-        if (not data_out_range) and prob_success:
-            feature_all_classes[ret_class].append(this_shelf.return_feature())
-            int_all_classes[ret_class].append(Y_ret)
-            X_all_classes[ret_class].append(X_ret)
-            solve_times_all_classes[ret_class].append(time_ret)
-            costs_all_classes[ret_class].append(cost_ret)
-            num_of_int_all_classes[ret_class].append(actual_num_of_int_var)
+            prob_success, X_ret, X_dict, Y_ret, cost_ret, time_ret, actual_num_of_int_var, data_out_range = solve_within_patch(
+                          this_shelf, all_classified_solutions[ret_class], iter_data, iter_data, -1, use_warm_start)
+
+            if (not data_out_range) and prob_success:
+                feature_all_classes[ret_class].append(this_shelf.return_feature())
+                int_all_classes[ret_class].append(Y_ret)
+                X_all_classes[ret_class].append(X_ret)
+                solve_times_all_classes[ret_class].append(time_ret)
+                costs_all_classes[ret_class].append(cost_ret)
+                num_of_int_all_classes[ret_class].append(actual_num_of_int_var)
 
 
 for iter_class in range(num_of_classes):
-    # Gather features and integers to train learner
-    saves = {"train_params": train_params, "features": feature_all_classes[iter_class],
-             "Integers": int_all_classes[iter_class], "X": X_all_classes[iter_class],
-             "Solve_time": solve_times_all_classes[iter_class], "Cost": costs_all_classes[iter_class],
-             "num_of_int": num_of_int_all_classes[iter_class]}
+    if iter_class in list_clusters:
+        # Gather features and integers to train learner
+        saves = {"train_params": train_params, "features": feature_all_classes[iter_class],
+                 "Integers": int_all_classes[iter_class], "X": X_all_classes[iter_class],
+                 "Solve_time": solve_times_all_classes[iter_class], "Cost": costs_all_classes[iter_class],
+                 "num_of_int": num_of_int_all_classes[iter_class]}
 
-    folder_path = "clustered_dataset/" + "dataset_class_" + str(iter_class)
-    if not os.path.exists(folder_path):
-        os.makedirs(folder_path)
+        folder_path = "clustered_dataset/" + "dataset_class_" + str(iter_class)
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
 
-    save_path = folder_path + "/" + prefix + "_dataset_class_" + str(iter_class) + "_y_guess.pkl"
-    with open(save_path, "wb") as f:
-        pickle.dump(saves, f)
+        save_path = folder_path + "/" + prefix + "_dataset_class_" + str(iter_class) + ".pkl"
+        with open(save_path, "wb") as f:
+            pickle.dump(saves, f)
 
 # Separate dataset into training and testing sets
 # runpy.run_module('clustered_data_separate_train_test_data')

@@ -108,6 +108,24 @@ class Shelf:
         else:
             self.contain_in_hand_item = False
 
+    @staticmethod
+    def flat_feature_to_init_list(flat_feature, shelf_geometry):
+        item_width_in_hand = flat_feature[-1]
+        item_height_in_hand = flat_feature[-2]
+
+        num_of_stored_item = int((len(flat_feature)-2)/5)
+        stored_item_list= []
+
+        for iter_item in range(num_of_stored_item):
+
+            stored_item_list.append(Item(flat_feature[5 * iter_item],
+                                         flat_feature[5 * iter_item + 1],
+                                         flat_feature[5 * iter_item + 2],
+                                         flat_feature[5 * iter_item + 3],
+                                         flat_feature[5 * iter_item + 4]))
+
+        return stored_item_list, num_of_stored_item, shelf_geometry, item_width_in_hand, item_height_in_hand
+
     def return_feature(self):
         ret = []
 

@@ -28,7 +28,7 @@ import pdb
 # right 0, 1, 2, 3, 4, 5, etc
 
 
-def solve_within_patch(shelf_data, data_patch_indicator, count, iter_data):
+def solve_within_patch(shelf_data, data_patch_indicator, count, iter_data, time_lim=-1, use_warm_start=False):
 
     bin_width = shelf_data.shelf_geometry.shelf_width
     bin_height = shelf_data.shelf_geometry.shelf_height
@@ -107,24 +107,29 @@ def solve_within_patch(shelf_data, data_patch_indicator, count, iter_data):
         active_region.append([])
 
     # Retrieve the active section list
+    if use_warm_start:
+        active_region_ws = []
+        for iter_dim in range(48):
+            active_region_ws.append([])
 
-    # # Begin: This section is to append all sections - solve complete problem
-    # for iter_dim in range(48):
-    #     len_sections = len(region_list[iter_dim])
-    #     for iter_sect in range(len_sections):
-    #         active_region[iter_dim].append(iter_sect)
-    # # End: solve complete problem
-
-    # Begin: This section normally find active regions for each data
-    for iter_data in range(len_data):
+        # Begin: This section is to append all sections - solve complete problem
         for iter_dim in range(48):
             len_sections = len(region_list[iter_dim])
             for iter_sect in range(len_sections):
-                tt = data_patch_indicator[iter_data][iter_dim]
-                if region_list[iter_dim][iter_sect][1] >= tt >= region_list[iter_dim][iter_sect][0]:
-                    active_region[iter_dim].append(iter_sect)
-                    break
-    # End: This section normally find active regions for each data
+                active_region[iter_dim].append(iter_sect)
+        # End: solve complete problem
+
+    else:
+        # Begin: This section normally find active regions for each data
+        for iter_data in range(len_data):
+            for iter_dim in range(48):
+                len_sections = len(region_list[iter_dim])
+                for iter_sect in range(len_sections):
+                    tt = data_patch_indicator[iter_data][iter_dim]
+                    if region_list[iter_dim][iter_sect][1] >= tt >= region_list[iter_dim][iter_sect][0]:
+                        active_region[iter_dim].append(iter_sect)
+                        break
+        # End: This section normally find active regions for each data
 
     # Reassign integer variables according to the active region list
     data_out_range = False
@@ -133,6 +138,7 @@ def solve_within_patch(shelf_data, data_patch_indicator, count, iter_data):
     list_sect_reassigned = []
     active_region_reassigned_with_repeat = []
     reassign_map = []
+
     for iter_dim in range(48):
         if active_region[iter_dim] == []:
             data_out_range = True
@@ -157,7 +163,7 @@ def solve_within_patch(shelf_data, data_patch_indicator, count, iter_data):
         time_ret = 0
         return prob_success, X_ret, X_dict, Y_ret, cost_ret, time_ret, data_out_range
 
-    # print("============================ Active regions with repeat ===================================================")
+    # print("============================ Active regions with repeat =================================================")
     # print(active_region_reassigned_with_repeat)
 
     # Compute number of vertices and polygons for bilinear approximations
@@ -292,6 +298,8 @@ def solve_within_patch(shelf_data, data_patch_indicator, count, iter_data):
 
     m = go.Model("Bin_organization")
     m.setParam('MIPGap', 1e-2)
+    if time_lim != -1:
+        m.setParam('TimeLimit', time_lim)
 
     x_item = m.addVars(num_of_item+1, dim_2D, lb=-bigM, ub=bigM)  # Positions for stored items
     R_wb = m.addVars(num_of_item+1, dim_2D, dim_2D, lb=-1.0, ub=1.0)  # Rotation matrices for stored items
@@ -308,7 +316,7 @@ def solve_within_patch(shelf_data, data_patch_indicator, count, iter_data):
     # The meaning dimension for a_times_v: #pair, which item in pair, 2D plane dimension, #vertex
     a_times_v = m.addVars(num_of_pairs, dim_2D, dim_2D, num_of_vertices, lb=-bigM, ub=bigM)
 
-    # Integer variables ================================================================================================
+    # Binary variables ================================================================================================
     int_all = 0
 
     int_item_state = m.addVars(num_of_item, num_of_states_stored, vtype=go.GRB.BINARY)
@@ -377,6 +385,70 @@ def solve_within_patch(shelf_data, data_patch_indicator, count, iter_data):
                         num_of_vertices_av_filtered[iter_pair][iter_paired][iter_dim][iter_vertex], lb=0.0, ub=1.0))
 
     m.update()
+
+    if use_warm_start:
+        # Setup warm start
+        m.NumStart = len_data
+
+        # Set StartNumber
+        for s in range(len_data):
+            m.params.StartNumber = s
+
+            # Get the feasible solution
+            feas = data_patch_indicator[s]
+            ret_bin_all = []
+
+            # For each dimension, get the active region
+            act_region_ws = []
+            for iter_dim in range(48):
+                tt = feas[iter_dim]
+                len_sections = len(region_list[iter_dim])
+                for iter_sect in range(len_sections):
+                    if region_list[iter_dim][iter_sect][1] >= tt >= region_list[iter_dim][iter_sect][0]:
+                        act_region_ws.append(iter_sect)
+                        break
+
+                # Retrieve the original integer variables for this dimension
+                # Basically change the active region label to a binary value of length = original region length
+                ret_bin = dec2bin(act_region_ws[iter_dim], int(np.log2(len(region_list[iter_dim]))))
+                ret_bin_all.append(ret_bin.tolist())
+
+            assert len(act_region_ws) == 48, "Incorrect length of active region list!"
+
+            # Find the variable and set start value
+            # Warm start integer variables, consider make this part a function =========================================
+            # Since for warm start, the integer variables are not re-assigned,
+            # the num_of_int arrays should have original values
+
+            # TODO: clarify the definition of 48 dim vector and make it into a class
+            # The format of 48 dim vector is for item 0, 1, 2 and item-in-hand, each one is of form:
+            # [ang_pt_remove, v_item_remove[0, 0], v_item_remove[0, 1],
+            #                 v_item_remove[1, 0], v_item_remove[1, 1],
+            #                 v_item_remove[2, 0], v_item_remove[2, 1],
+            #                 v_item_remove[3, 0], v_item_remove[3, 1]]
+            # then append each of the separating plane with the form:
+            # [aa[0], aa[1]]
+
+            # Warm start int_R
+            for iter_item in range(num_of_item+1):
+                for iter_int in range(num_of_int_R[iter_item]):
+                   int_R[iter_item][iter_int].Start = ret_bin_all[int(iter_item * 9)][iter_int]
+
+            # Warm start int_a00 and int_a11
+            for iter_pair in range(num_of_pairs):
+                for iter_int in range(num_of_int_a00[iter_pair]):
+                    int_a_00[iter_pair][iter_int].Start = ret_bin_all[int((num_of_item+1)*9+iter_pair*2)][iter_int]
+
+                for iter_int in range(num_of_int_a11[iter_pair]):
+                    int_a_11[iter_pair][iter_int].Start = ret_bin_all[int((num_of_item+1)*9+iter_pair*2+1)][iter_int]
+
+            # Warm start v
+            for iter_item in range(num_of_item+1):
+                for iter_vertex in range(num_of_vertices):
+                    for iter_dim in range(dim_2D):
+                        for iter_int in range(num_of_integer_v_filtered[iter_item][iter_dim][iter_vertex]):
+                            int_v[iter_item][iter_vertex][iter_dim][iter_int].Start = \
+                                ret_bin_all[int(iter_item*9+1+iter_vertex*2+iter_dim)][iter_int]
 
     # Constraint: Vertices is related to center position and orientation ===============================================
     for iter_item in range(num_of_item+1):

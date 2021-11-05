@@ -1,21 +1,23 @@
 import pickle, os, sys
 dir_ReDUCE = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(dir_ReDUCE+"/utils")
+from book_problem_classes import BookProblemFeature, Item, ShelfGeometry, Shelf
 import numpy as np
 from sklearn.model_selection import train_test_split
 
 # TODO: Begin: Remember to make changes to the following parameters !!
 dir_path = dir_ReDUCE + "/clustered_dataset"
 sss = "AllClusters"
-# sss = "cluster68_3000data"
+# sss = "cluster34_5000data"
 
 train_fn = dir_path + '/train_separated_' + sss + '.p'
 test_fn = dir_path + '/test_separated_' + sss + '.p'
 
-class_label_all = list(range(100))
-# class_label_all = [68]
+class_label_all = list(range(26))
+# class_label_all = [34]
 len_class_label = len(class_label_all)
 
-list_dataset = [[0] for iterr in range(len_class_label)]
+list_dataset = [[0, 1] for iterr in range(len_class_label)]
 # TODO: End: Remember to make changes to the following parameters !!
 
 list_train_file = []
@@ -33,7 +35,7 @@ for iterrr in range(len_class_label):
     for ct_dataset in range(len(list_dataset[iterrr])):
         file = open(dir_path + '/' + 'dataset_class_' + str(class_label) + '/' +
                                     str(list_dataset[iterrr][ct_dataset]) + '_dataset_class_' + str(class_label) +
-                                    '_y_guess.pkl', 'rb')
+                                    '.pkl', 'rb')
         list_train_file.append(file)
         daaa = pickle.load(file)
         ll = len(daaa["X"])
@@ -113,13 +115,6 @@ solve_times = np.hstack([solve_times_all[ct] for ct in range(num_dataset) if not
 
 # Cost
 costs = np.hstack([costs_all[ct] for ct in range(num_dataset) if not ct in empty_dataset])
-
-# print("=======================================================================")
-# print(feature)
-# print(X)
-# print(Y)
-# print(solve_times)
-# print(costs)
 
 # ======================================================================================================================
 XX, yy, indices = range(len_tot), range(len_tot), range(len_tot)

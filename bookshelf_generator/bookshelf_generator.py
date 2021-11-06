@@ -301,7 +301,7 @@ def main(num_data=50):
     if save_data:
         # print(saves)
         ext = datetime.now().strftime("%H%M%S")
-        with open(dir_curr_path + "/bookshelf_scene_data/zero_remove_angle_auto_generated_boxes_data_ba_{ext}.pkl", "wb") as f:
+        with open(dir_curr_path + "/bookshelf_scene_data/zero_remove_angle_auto_generated_boxes_data_ba_"+ext+".pkl", "wb") as f:
             pickle.dump(saves, f)
 
     return saves

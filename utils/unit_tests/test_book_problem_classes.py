@@ -94,5 +94,15 @@ assert np.all(shelf2.return_stored_item_center_y() == np.array(center_y))
 assert np.all(shelf2.return_stored_item_heights() == height)
 assert np.all(shelf2.return_stored_item_widths() == width)
 assert np.all(shelf2.return_stored_item_angles() == angle)
+
+print("list of item angles and vertices ==================================================================")
+for itt in range(shelf2.num_of_item):
+    print(shelf2.item_list[itt].angle)
+    print(shelf2.item_list[itt].v_item)
+
+print("Return point on non-convex manifold ===============================================================")
+nonconvex_point = shelf2.return_nonconvex_point(1)
+print(nonconvex_point)
+
 print("============================= The following test is supposed to fail: =============================")
 fail = shelf2.item_width_in_hand

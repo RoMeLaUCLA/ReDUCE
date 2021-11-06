@@ -1,6 +1,6 @@
 import os, sys
-dir_Learning_MIP = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))))
-sys.path.append(dir_Learning_MIP+"/classification_tests/Bin_organization_problem/utils")
+dir_ReDUCE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+sys.path.append(dir_ReDUCE+"/unsupervised_learning")
 from solve_separating_planes import solve_separating_plane
 from get_vertices import get_vertices, plot_rectangle
 import matplotlib.pyplot as plt

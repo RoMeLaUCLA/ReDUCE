@@ -2,8 +2,27 @@ import numpy as np
 import os, sys
 dir_curr = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(dir_curr)
-from get_vertices import get_vertices
+from get_vertices import get_vertices, plot_rectangle
 offset = 3  # To account for numerical issue
+
+
+class PointNonconvex(list):
+    # This class inherit from the list type but add a few functions to parse the point
+
+    def __getitem__(self, key):
+        return list.__getitem__(self, key)
+
+    def return_angle(self, iter_item):
+        return list.__getitem__(int(iter_item*9))
+
+    def return_vertex(self, iter_item, iter_vertex, iter_dim):
+        return list.__getitem__(int(iter_item * 9 + 1 + iter_vertex * 2 + iter_dim))
+
+    # def return_a00(self, iter_pair):
+    #     return list.__getitem__(int((num_of_item + 1) * 9 + iter_pair * 2))
+    #
+    # def return_a11(self, iter_pair):
+    #     return list.__getitem__(int((num_of_item + 1) * 9 + iter_pair * 2 + 1))
 
 
 class BookProblemFeature:
@@ -47,6 +66,7 @@ class Item:
                               [np.sin(angle),  np.cos(angle)]])
         self.height = height
         self.width = width
+        self.v_item = get_vertices([self.center_x, self.center_y], self.R_bw, [self.height, self.width])
 
     def return_center(self):
         return np.array([self.center_x, self.center_y])
@@ -172,3 +192,34 @@ class Shelf:
         for iter_item in range(self.num_of_item):
             ret.append(self.item_list[iter_item].center_y)
         return np.array(ret)
+
+    def plot_scene_without_in_hand_item(self, ax, color, show):
+        for iter_item in range(self.num_of_item):
+            plot_rectangle(ax, self.item_list[iter_item].v_item, color=color, show=show)
+
+    def return_nonconvex_point(self, remove):
+        # This function returns a (angle+vertex) x num_of_item dimensional point on the nonconvex manifold
+        # Note the variables associated with separating planes are not included
+
+        assert not self.contain_in_hand_item, \
+            "Nonconvex point is only defined for the solved shelves that does not have item in hand"
+        assert 0 <= remove <= (self.num_of_item - 1), "Removed item ID must be one of the stored item ID"
+
+        point = []
+        for iter_item in range(self.num_of_item):
+            if iter_item != remove:
+                v_item = self.item_list[iter_item].v_item
+                angle = self.item_list[iter_item].angle
+                point.extend([angle, v_item[0, 0], v_item[0, 1],
+                                     v_item[1, 0], v_item[1, 1],
+                                     v_item[2, 0], v_item[2, 1],
+                                     v_item[3, 0], v_item[3, 1]])
+
+        v_item_remove = self.item_list[remove].v_item
+        angle_remove = self.item_list[remove].angle
+        point.extend([angle_remove, v_item_remove[0, 0], v_item_remove[0, 1],
+                                    v_item_remove[1, 0], v_item_remove[1, 1],
+                                    v_item_remove[2, 0], v_item_remove[2, 1],
+                                    v_item_remove[3, 0], v_item_remove[3, 1]])
+
+        return point
